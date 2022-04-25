@@ -1,0 +1,5 @@
+credentials.yaml
+market_maker/config/custom.py
+market_maker/classes/liquidityClients.py
+liquidityBot.py
+*.pyc
