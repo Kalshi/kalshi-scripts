@@ -12,11 +12,14 @@ authors = [""]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+PyYAML = "^6.0"
+requests = "^2.27.1"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "*"
 flake8 = "*"
 pytest = "^6.2.2"
+black = {version = "^22.3.0", allow-prereleases = true}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

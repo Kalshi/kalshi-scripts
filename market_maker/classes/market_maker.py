@@ -1,7 +1,9 @@
 from time import sleep
 
+from classes.maker_client import MakerClient
 from classes.profiles import MarketProfile
 from config.custom import get_strategies
+from utils.credentials import get_credentials
 
 # Increasing the polling frequency could lead to
 # rate limiting.
@@ -24,7 +26,13 @@ class MarketMaker:
         print(self.strategy)
         print()
 
-        self.authenticate()
+        self.credentials = get_credentials(self.strategy.env)
+        self.client = MakerClient(
+            self.strategy.env,
+            self.credentials.email,
+            self.credentials.password,
+            self.credentials.advanced_api,
+        )
 
         # Produce a list of markets to monitor.
         self.active_markets = set([m.market_ticker for m in self.strategy.markets])
@@ -34,9 +42,6 @@ class MarketMaker:
             self.make()
         elif operation == "clean":
             self.cleanup()
-
-    def authenticate(self) -> None:
-        pass
 
     def validate_markets(self) -> None:
         """

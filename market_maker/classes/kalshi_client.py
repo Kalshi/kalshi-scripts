@@ -42,10 +42,7 @@ class KalshiClient:
     """A simple client that allows utils to call authenticated Kalshi API endpoints."""
 
     def __init__(
-        self,
-        env: Environment,
-        email: str,
-        password: str,
+        self, env: Environment, email: str, password: str, use_advanced_api: bool
     ):
         self.env = env
         self.host = hosts[self.env]
@@ -58,10 +55,19 @@ class KalshiClient:
         self.last_login: Optional[dt] = None
 
         self.reauthenticate_duration = timedelta(hours=5)
+        self.use_advanced_api = use_advanced_api
+
+        self.markets_url = "/v1/markets"
 
     def raise_if_bad_response(self, response: requests.Response) -> None:
         if not response.ok:
             raise HttpError(response.reason, response.status_code)
+
+    def get_user_url(self) -> str:
+        return "/v1/users/" + self.user_id
+
+    def get_market_url(self, ticker: str) -> str:
+        return "/v1/markets_by_ticker/" + ticker
 
     def login(self) -> None:
         login_json = json.dumps({"email": self.email, "password": self.password})
