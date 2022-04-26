@@ -54,25 +54,15 @@ class MarketMaker:
             row = self.all_active_markets[
                 self.all_active_markets["ticker_name"] == market.market_ticker
             ]
-
             if len(row) == 1:
                 market_id = row.iloc[0]["id"]
                 self.active_market_ids.add(market_id)
                 self.market_ids_to_profiles[market_id] = market
 
-        self.validate_markets()
-
         if operation == "make":
             self.make()
-        elif operation == "clean":
+        elif operation == "clear":
             self.cleanup()
-
-    def validate_markets(self) -> None:
-        """
-        Confirm that all specified markets exist and
-        are open.
-        """
-        pass
 
     def make(self) -> None:
         """
@@ -94,9 +84,9 @@ class MarketMaker:
         """
         for market_id in self.active_market_ids:
             orders = self.client.get_market_orders(market_id=market_id)
-
             if len(orders) == 0:
                 continue
+            print("Clearing", len(orders), "orders from", market_id)
             order_ids = list(orders["order_id"])
 
             self.client.clear_orders(order_ids)
