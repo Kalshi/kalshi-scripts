@@ -7,8 +7,8 @@ import requests
 from classes.environment import Environment
 
 hosts: Dict[Environment, str] = {
-    Environment.DEMO: "https://demo-api.kalshi.co/",
-    Environment.PROD: "https://trading-api.kalshi.com/",
+    Environment.DEMO: "https://demo-api.kalshi.co",
+    Environment.PROD: "https://trading-api.kalshi.com",
 }
 
 

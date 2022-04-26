@@ -30,6 +30,13 @@ class MarketMaker:
         print(self.strategy)
         print()
 
+        self.expiration_ts = {
+            market.market_ticker: int(datetime.timestamp(market.clear_time))
+            if market.clear_time is not None
+            else 0
+            for market in self.strategy.markets
+        }
+
         self.credentials = get_credentials(self.strategy.env)
         self.client = MakerClient(
             self.strategy.env,
@@ -86,15 +93,25 @@ class MarketMaker:
         Remove any existing resting orders.
         """
         for market_id in self.active_market_ids:
-            self.client.clear_orders(market_id)
+            orders = self.client.get_market_orders(market_id=market_id)
+
+            if len(orders) == 0:
+                continue
+            order_ids = list(orders["order_id"])
+
+            self.client.clear_orders(order_ids)
             sleep(MARKET_TIMEOUT_SECS)
 
     def manage_orders(self, market_id: str, positions: pd.DataFrame) -> None:
         profile = self.market_ids_to_profiles[market_id]
         market_details = self.client.get_market(market_id)
 
+        # If the market has never been traded on, skip it.
+        if market_details["volume"] == 0:
+            return
+
         orders = self.client.get_market_orders(market_id=market_id)
-        order_ids = list(orders["order_id"])
+        order_ids: List[str] = list(orders["order_id"]) if len(orders) > 0 else []
 
         current_time = datetime.now()
         if profile.clear_time is not None and current_time > profile.clear_time:
@@ -124,7 +141,7 @@ class MarketMaker:
             if current_resting > 0:
                 if (
                     price not in desired_yes_book
-                    or desired_yes_book[current_resting] != desired_yes_book[price]
+                    or current_resting != desired_yes_book[price]
                 ):
                     orders_to_cancel += list(
                         orders[orders["price"] == price]["order_id"]
@@ -137,7 +154,7 @@ class MarketMaker:
             if current_resting > 0:
                 if (
                     price not in desired_no_book
-                    or desired_no_book[current_resting] != desired_no_book[price]
+                    or current_resting != desired_no_book[price]
                 ):
                     orders_to_cancel += list(
                         orders[orders["price"] == price]["order_id"]
@@ -153,17 +170,33 @@ class MarketMaker:
                 continue
             else:
                 new_orders.append(
-                    Order(count=count, market_id=market_id, price=price, side="yes")
+                    Order(
+                        count=count,
+                        expiration_unix_ts=self.expiration_ts[profile.market_ticker],
+                        market_id=market_id,
+                        price=price,
+                        side="yes",
+                    )
                 )
         for price, count in desired_no_book.items():
             if price in consistent_no:
                 continue
             else:
                 new_orders.append(
-                    Order(count=count, market_id=market_id, price=price, side="no")
+                    Order(
+                        count=count,
+                        expiration_unix_ts=self.expiration_ts[profile.market_ticker],
+                        market_id=market_id,
+                        price=price,
+                        side="no",
+                    )
                 )
 
-        self.client.post_orders(new_orders)
+        try:
+            self.client.post_orders(new_orders)
+        except Exception as e:
+            print("Failed to place orders in", profile.market_ticker)
+            print(str(e))
 
     def produce_book(
         self, profile: MarketProfile, position: pd.DataFrame, last_traded_price: int
@@ -182,7 +215,11 @@ class MarketMaker:
         topOfYes = int(last_traded_price - (profile.spread - 1) / 2)
         for i in range(profile.depth):
             price = topOfYes - i
-            if price < 1:
+            if (
+                price < 1
+                or price > profile.max_yes_price
+                or price < profile.min_yes_price
+            ):
                 break
             order_price_cents = price * yes_orders_per_level
             if (
@@ -200,7 +237,12 @@ class MarketMaker:
         topOfNo = int(no_last_traded_price - (profile.spread - 1) / 2)
         for i in range(profile.depth):
             price = topOfNo - i
-            if price < 1:
+            yes_price = 100 - price
+            if (
+                price < 1
+                or yes_price > profile.max_yes_price
+                or yes_price < profile.min_yes_price
+            ):
                 break
             order_price_cents = price * no_orders_per_level
             if (

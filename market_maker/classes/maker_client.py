@@ -100,7 +100,7 @@ class MakerClient(KalshiClient):
 
     def clear_orders(self, order_ids: List[str]) -> pd.DataFrame:
         if self.use_advanced_api and len(order_ids) > 0:
-            batched_url = self.user_url + "/batch_orders"
+            batched_url = self.get_user_url() + "/batch_orders"
             n = min(19, len(order_ids))
             grouped_orders_list = [
                 order_ids[i : i + n] for i in range(0, len(order_ids), n)
@@ -110,7 +110,7 @@ class MakerClient(KalshiClient):
                 self.delete(path=batched_url, body=post_dict)
                 sleep(0.3)
         elif len(order_ids) > 0:
-            order_url_base = self.user_url + "/orders/"
+            order_url_base = self.get_user_url() + "/orders/"
             for order_id in order_ids:
                 self.delete(path=order_url_base + order_id, body={})
                 sleep(0.3)
@@ -118,7 +118,7 @@ class MakerClient(KalshiClient):
     def post_orders(self, orders: List[Order]) -> pd.DataFrame:
         recs: list = []
         if self.use_advanced_api:
-            batched_url = self.user_url + "/batch_orders"
+            batched_url = self.get_user_url() + "/batch_orders"
             n = min(19, len(orders))
 
             grouped_orders_list = [orders[i : i + n] for i in range(0, len(orders), n)]
@@ -127,9 +127,9 @@ class MakerClient(KalshiClient):
                 dictr = self.post(path=batched_url, body=orders_body)
                 recs += dictr["orders"]
         else:
-            order_url_base = self.user_url + "/orders"
+            order_url_base = self.get_user_url() + "/orders"
             for order in orders:
-                order_body = {"order": asdict(order)}
+                order_body = asdict(order)
                 dictr = self.post(path=order_url_base, body=order_body)
                 recs.append(dictr["order"])
 
