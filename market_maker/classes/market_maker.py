@@ -233,7 +233,7 @@ class MarketMaker:
 
         # Handle no side
         no_fair_value = 100 - fair_value
-        cumulative_no_exposure = -exposure_cents if not holds_yes else exposure_cents
+        cumulative_no_exposure = -exposure_cents if holds_yes else exposure_cents
         no_orders_per_level = int(
             profile.instant_liquidity_cents / profile.depth / no_fair_value
         )

@@ -1,5 +1,9 @@
 # Kalshi Scripts
 
+### Background
+
+This repository contains a collection of scripts for trading on [Kalshi](https://kalshi.com), an events exchange. The scripts make use of Kalshi's public API which is documented [here](https://kalshi-public-docs.s3.amazonaws.com/KalshiAPI.html).
+
 ### General Setup
 
 1. Install [Poetry](https://python-poetry.org/).
