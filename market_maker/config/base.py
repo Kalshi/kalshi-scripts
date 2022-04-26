@@ -22,8 +22,7 @@ def get_strategies() -> Dict[str, profiles.StrategyProfile]:
 
     # Default profile
     default_markets: List[profiles.MarketProfile] = [
-        """
-        MarketProfile(
+        profiles.MarketProfile(
             market_ticker="",
 
             # The amount of liquidity you'd like to provide
@@ -54,9 +53,8 @@ def get_strategies() -> Dict[str, profiles.StrategyProfile]:
             # The manner you'd like to distribute your liquidity across
             # the 'depth' of ticks. Supported strategies:
             # LINEAR: Resting orders of equal size are placed at each tick.
-            distribution=Distribution.LINEAR,
+            distribution=profiles.Distribution.LINEAR,
         )
-        """
     ]
     strategies["default"] = profiles.StrategyProfile(
         profiles.Environment.DEMO, default_markets

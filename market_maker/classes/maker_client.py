@@ -1,19 +1,43 @@
 from dataclasses import asdict
 from time import sleep
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
 from classes.environment import Environment
 from classes.kalshi_client import KalshiClient
 from classes.order import Order
+import asyncio
+import websockets
 
+
+websockets_urls: Dict[Environment, str] = {
+    Environment.DEMO: "wss://demo-api.kalshi.co/v1/ws",
+    Environment.PROD: "wss://trading-api.kalshi.co/v1/ws",
+}
 
 class MakerClient(KalshiClient):
     def __init__(
         self, env: Environment, email: str, password: str, use_advanced_api: bool
     ):
         super().__init__(env, email, password, use_advanced_api)
+        orders_dict = {}
+        user_order_trades_subscription = "{'cmd': 'subscribe', 'params': {'channels': ['user_orders', 'user_trades']}}"
+        websocket_url = websockets_urls[Environment]
+
+    async def update_orderbook(message):
+        print("Updating orderbook: ", message)
+
+    async def user_order_handler(self, websocket):
+        while True:
+            message = await websocket.recv()
+            await self.update_orderbook(message)
+
+    async def connect_websockets(self):
+        async with websockets.connect(self.websockets_url, extra_headers = self.request_headers) as ws:
+            await ws.send(self.user_order_trades_subscription)
+            self.user_order_handler(ws)
+
 
     def get_public_markets(
         self, dtnormalize: bool = False, active: bool = True
