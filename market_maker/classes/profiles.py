@@ -12,6 +12,7 @@ class Distribution(Enum):
 @dataclass
 class MarketProfile:
     market_ticker: str
+    instant_liquidity_cents: int
     max_exposure_cents: int
     spread: int
     depth: int

@@ -1,6 +1,6 @@
 from dataclasses import asdict
 from time import sleep
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,40 @@ class MakerClient(KalshiClient):
     ):
         super().__init__(env, email, password, use_advanced_api)
 
+    def get_public_markets(
+        self, dtnormalize: bool = False, active: bool = True
+    ) -> pd.DataFrame:
+        dictr = self.get(self.markets_url)
+        recs = dictr["markets"]
+        df = pd.json_normalize(recs)
+        if dtnormalize:
+            df = self._normalize_datetime(
+                df,
+                [
+                    "expiration_date",
+                    "list_date",
+                    "open_date",
+                    "close_date",
+                    "create_date",
+                ],
+            )
+            df["close_date"] = df["close_date"].dt.tz_localize(None)
+
+        if active:
+            df = df[df.status == "active"]
+        return df
+
+    def get_market(self, market_id: str) -> dict:
+        dictr = self.get(self.get_market_url(market_id))
+        return dictr["market"]
+
+    def get_positions(self) -> pd.DataFrame:
+        dictr = self.get(self.get_user_url() + "/positions")
+
+        recs = dictr["market_positions"]
+        df = pd.json_normalize(recs)
+        return df
+
     def get_market_orders(self, market_id: str) -> pd.DataFrame:
         orders_url = self.get_user_url() + "/orders"
         dictr = self.get(
@@ -25,7 +59,7 @@ class MakerClient(KalshiClient):
         df = pd.json_normalize(recs)
         return df
 
-    def get_orderbook(self, market_id: str) -> pd.DataFrame:
+    def get_orderbook(self, market_id: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
         base_url = self.get_market_url(market_id)
         order_book_url = base_url + "/order_book"
         dictr = self.get(order_book_url)
@@ -43,7 +77,7 @@ class MakerClient(KalshiClient):
             np.arange(1, 100, 1), fill_value=0
         ), noDf.set_index("p").reindex(np.arange(1, 100, 1), fill_value=0)
 
-    def get_indiv_orderbook(self, market_id: str) -> pd.DataFrame:
+    def get_indiv_orderbook(self, market_id: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
         orders = self.get_market_orders(market_id=market_id)
 
         if len(orders):
@@ -64,13 +98,10 @@ class MakerClient(KalshiClient):
 
         return yesDf, noDf
 
-    def clear_orders(self, market_id: str) -> pd.DataFrame:
-        orders = self.get_market_orders(market_id=market_id)
-
-        if self.use_advanced_api and len(orders):
+    def clear_orders(self, order_ids: List[str]) -> pd.DataFrame:
+        if self.use_advanced_api and len(order_ids) > 0:
             batched_url = self.user_url + "/batch_orders"
-            n = min(19, len(orders))
-            order_ids = list(orders.order_id)
+            n = min(19, len(order_ids))
             grouped_orders_list = [
                 order_ids[i : i + n] for i in range(0, len(order_ids), n)
             ]
@@ -78,9 +109,8 @@ class MakerClient(KalshiClient):
                 post_dict = {"ids": group_orders}
                 self.delete(path=batched_url, body=post_dict)
                 sleep(0.3)
-        elif len(orders):
+        elif len(order_ids) > 0:
             order_url_base = self.user_url + "/orders/"
-            order_ids = list(orders.order_id)
             for order_id in order_ids:
                 self.delete(path=order_url_base + order_id, body={})
                 sleep(0.3)

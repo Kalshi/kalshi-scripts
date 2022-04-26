@@ -66,8 +66,8 @@ class KalshiClient:
     def get_user_url(self) -> str:
         return "/v1/users/" + self.user_id
 
-    def get_market_url(self, ticker: str) -> str:
-        return "/v1/markets_by_ticker/" + ticker
+    def get_market_url(self, market_id: str) -> str:
+        return "/v1/markets/" + market_id
 
     def login(self) -> None:
         login_json = json.dumps({"email": self.email, "password": self.password})
