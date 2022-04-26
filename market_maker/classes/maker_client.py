@@ -1,4 +1,3 @@
-import json
 from dataclasses import asdict
 from time import sleep
 from typing import List
@@ -66,30 +65,43 @@ class MakerClient(KalshiClient):
         return yesDf, noDf
 
     def clear_orders(self, market_id: str) -> pd.DataFrame:
-        batched_url = self.user_url + "/batch_orders"
-        # batching must be less than 20
-
         orders = self.get_market_orders(market_id=market_id)
 
-        n = min(19, len(orders))
-
-        if len(orders):
+        if self.use_advanced_api and len(orders):
+            batched_url = self.user_url + "/batch_orders"
+            n = min(19, len(orders))
             order_ids = list(orders.order_id)
             grouped_orders_list = [
                 order_ids[i : i + n] for i in range(0, len(order_ids), n)
             ]
             for group_orders in grouped_orders_list:
                 post_dict = {"ids": group_orders}
-                try:
-                    self.delete(path=batched_url, body=json.dumps(post_dict))
-                except Exception:
-                    sleep(1)
-                    self.delete(path=batched_url, body=json.dumps(post_dict))
+                self.delete(path=batched_url, body=post_dict)
+                sleep(0.3)
+        elif len(orders):
+            order_url_base = self.user_url + "/orders/"
+            order_ids = list(orders.order_id)
+            for order_id in order_ids:
+                self.delete(path=order_url_base + order_id, body={})
+                sleep(0.3)
 
-    def post_batched_orders(self, order_list: List[Order]) -> pd.DataFrame:
-        batched_url = self.user_url + "/batch_orders"
-        post_dict = {"orders": [asdict(o) for o in order_list]}
-        dictr = self.post(path=batched_url, body=json.dumps(post_dict))
-        recs = dictr["orders"]
+    def post_orders(self, orders: List[Order]) -> pd.DataFrame:
+        recs: list = []
+        if self.use_advanced_api:
+            batched_url = self.user_url + "/batch_orders"
+            n = min(19, len(orders))
+
+            grouped_orders_list = [orders[i : i + n] for i in range(0, len(orders), n)]
+            for group_orders in grouped_orders_list:
+                orders_body = {"orders": [asdict(o) for o in group_orders]}
+                dictr = self.post(path=batched_url, body=orders_body)
+                recs += dictr["orders"]
+        else:
+            order_url_base = self.user_url + "/orders"
+            for order in orders:
+                order_body = {"order": asdict(order)}
+                dictr = self.post(path=order_url_base, body=order_body)
+                recs.append(dictr["order"])
+
         df = pd.json_normalize(recs)
         return df

@@ -13,9 +13,10 @@ class Distribution(Enum):
 class MarketProfile:
     market_ticker: str
     max_exposure_cents: int
-    spread: Optional[int]
-    depth: Optional[int]
-    fair_value: Optional[int]
+    spread: int
+    depth: int
+    max_yes_price: Optional[int]
+    min_yes_price: Optional[int]
     clear_time: Optional[str]
     distribution: Distribution
 
