@@ -47,6 +47,8 @@ class MarketMaker:
 
         # Produce a list of markets to monitor.
         self.all_active_markets = self.client.get_public_markets()
+        self.last_positions: Dict[str, int] = {}
+        self.fair_values: Dict[str, int] = {}
 
         self.active_market_ids: Set[str] = set()
         self.market_ids_to_profiles: Dict[str, MarketProfile] = {}
@@ -115,10 +117,21 @@ class MarketMaker:
             return
 
         position = positions[positions["market_id"] == market_id]
+
+        position_count = position.iloc[0]["position"] if len(position) > 0 else 0
         last_traded_price = market_details["last_price"]
 
+        if market_id not in self.fair_values:
+            self.fair_values[market_id] = last_traded_price
+            self.last_positions[market_id] = position_count
+
+        changed_position = position_count - self.last_positions[market_id]
+        fair_value_change = -int(changed_position / profile.price_stickyness)
+        self.fair_values[market_id] += fair_value_change
+        self.last_positions[market_id] += fair_value_change * profile.price_stickyness
+
         desired_yes_book, desired_no_book = self.produce_book(
-            profile, position, last_traded_price
+            profile, position, self.fair_values[market_id]
         )
         current_yes_book, current_no_book = self.client.get_indiv_orderbook(market_id)
 
@@ -189,7 +202,7 @@ class MarketMaker:
             print(str(e))
 
     def produce_book(
-        self, profile: MarketProfile, position: pd.DataFrame, last_traded_price: int
+        self, profile: MarketProfile, position: pd.DataFrame, fair_value: int
     ) -> Tuple[Dict[int, int], Dict[int, int]]:
         exposure_cents = 0 if len(position) == 0 else position.iloc[0]["position_cost"]
         holds_yes = len(position) > 0 and position.iloc[0]["position"] > 0
@@ -200,9 +213,9 @@ class MarketMaker:
         # Handle yes side
         cumulative_yes_exposure = exposure_cents if holds_yes else -exposure_cents
         yes_orders_per_level = int(
-            profile.instant_liquidity_cents / profile.depth / last_traded_price
+            profile.instant_liquidity_cents / profile.depth / fair_value
         )
-        topOfYes = int(last_traded_price - (profile.spread - 1) / 2)
+        topOfYes = int(fair_value - (profile.spread - 1) / 2)
         for i in range(profile.depth):
             price = topOfYes - i
             if (
@@ -219,12 +232,12 @@ class MarketMaker:
             desired_yes_book[price] = yes_orders_per_level
 
         # Handle no side
-        no_last_traded_price = 100 - last_traded_price
+        no_fair_value = 100 - fair_value
         cumulative_no_exposure = -exposure_cents if not holds_yes else exposure_cents
         no_orders_per_level = int(
-            profile.instant_liquidity_cents / profile.depth / no_last_traded_price
+            profile.instant_liquidity_cents / profile.depth / no_fair_value
         )
-        topOfNo = int(no_last_traded_price - (profile.spread - 1) / 2)
+        topOfNo = int(no_fair_value - (profile.spread - 1) / 2)
         for i in range(profile.depth):
             price = topOfNo - i
             yes_price = 100 - price

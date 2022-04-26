@@ -14,6 +14,7 @@ class MarketProfile:
     market_ticker: str
     instant_liquidity_cents: int
     max_exposure_cents: int
+    price_stickyness: int
     spread: int
     depth: int
     max_yes_price: Optional[int]

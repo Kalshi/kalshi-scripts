@@ -34,6 +34,11 @@ def get_strategies() -> Dict[str, profiles.StrategyProfile]:
             # your position in a market.
             max_exposure_cents=20000,
 
+            # The numbers of contracts that must be purchased
+            # from the bot before it increments/decrements its
+            # fair value (around which the spread is centered).
+            price_stickyness=40,
+
             # The amount of ticks between the yes and no liquidity
             # you provide. Only odd numbers are currently supported.
             spread=3,
