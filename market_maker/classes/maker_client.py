@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from market_maker.classes.environment import Environment
-from market_maker.classes.kalshi_client import KalshiClient
+from market_maker.classes.kalshi_client import HttpError, KalshiClient
 from market_maker.classes.order import Order
 
 
@@ -99,7 +99,11 @@ class MakerClient(KalshiClient):
         elif len(order_ids) > 0:
             order_url_base = self.get_user_url() + "/orders/"
             for order_id in order_ids:
-                self.delete(path=order_url_base + order_id, body={})
+                try:
+                    self.delete(path=order_url_base + order_id, body={})
+                except HttpError as e:
+                    if e.status != 404:
+                        raise e
                 sleep(0.3)
 
     def post_orders(self, orders: List[Order]) -> pd.DataFrame:

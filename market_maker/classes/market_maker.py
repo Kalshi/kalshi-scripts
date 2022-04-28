@@ -243,7 +243,7 @@ class MarketMaker:
             yes_order_exposure = (
                 yes_orders["price"] * yes_orders["remaining_count"]
             ).sum()
-            no_orders = orders[orders["is_yes"] is False]
+            no_orders = orders[orders["is_yes"] == False]
             no_order_exposure = (
                 no_orders["price"] * no_orders["remaining_count"]
             ).sum()
