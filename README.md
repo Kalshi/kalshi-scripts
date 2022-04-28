@@ -35,7 +35,7 @@ This script serves as a generic baseline for market making on Kalshi. It allows 
 
 ### Running the Script
 
-1. To run the script, execute `poetry run python market_maker/__init__.py make [profile]`. If no `profile` is provided, the script will assume the desired profile is `default`.
-2. If you exit the script early and would like to clear resting orders in the affected markets, execute `poetry run python market_maker/__init__.py clear [profile]`.
+1. To run the script, execute `poetry run python main.py make [profile]`. If no `profile` is provided, the script will assume the desired profile is `default`.
+2. If you exit the script early and would like to clear resting orders in the affected markets, execute `poetry run python main.py clear [profile]`.
 
 Note: It is not recommended to manually place orders on markets affected by the script. This could inadvertently cause you to exceed your specified exposure limits.

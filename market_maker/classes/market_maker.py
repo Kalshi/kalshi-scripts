@@ -3,11 +3,12 @@ from time import sleep
 from typing import Dict, List, Set, Tuple
 
 import pandas as pd
-from classes.maker_client import MakerClient
-from classes.order import Order
-from classes.profiles import MarketProfile
-from config.custom import get_strategies
-from utils.credentials import get_credentials
+
+from market_maker.classes.maker_client import MakerClient
+from market_maker.classes.order import Order
+from market_maker.classes.profiles import MarketProfile
+from market_maker.config.custom import get_strategies
+from market_maker.utils.credentials import get_credentials
 
 # Increasing the polling frequency could lead to
 # rate limiting.
@@ -117,7 +118,7 @@ class MarketMaker:
         if (
             market_id in self.last_snipes
             and profile.snipe_timeout_seconds is not None
-            and datetime.now() - self.last_snipes[market_id]
+            and (datetime.now() - self.last_snipes[market_id]).total_seconds()
             < profile.snipe_timeout_seconds
         ):
             return
@@ -242,7 +243,7 @@ class MarketMaker:
             yes_order_exposure = (
                 yes_orders["price"] * yes_orders["remaining_count"]
             ).sum()
-            no_orders = orders[orders["is_yes"] == False]
+            no_orders = orders[orders["is_yes"] is False]
             no_order_exposure = (
                 no_orders["price"] * no_orders["remaining_count"]
             ).sum()
@@ -261,8 +262,8 @@ class MarketMaker:
             price = topOfYes - i
             if (
                 price < 1
-                or price > profile.max_yes_price
-                or price < profile.min_yes_price
+                or (profile.max_yes_price is not None and price > profile.max_yes_price)
+                or (profile.min_yes_price is not None and price < profile.min_yes_price)
             ):
                 break
             order_price_cents = price * yes_orders_per_level
@@ -285,8 +286,14 @@ class MarketMaker:
             yes_price = 100 - price
             if (
                 price < 1
-                or yes_price > profile.max_yes_price
-                or yes_price < profile.min_yes_price
+                or (
+                    profile.max_yes_price is not None
+                    and yes_price > profile.max_yes_price
+                )
+                or (
+                    profile.min_yes_price is not None
+                    and yes_price < profile.min_yes_price
+                )
             ):
                 break
             order_price_cents = price * no_orders_per_level

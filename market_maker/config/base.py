@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-from classes import profiles
-from classes.profiles import Distribution, MarketProfile
+from market_maker.classes import profiles
+from market_maker.classes.profiles import Distribution, MarketProfile
 
 """
 Initial Setup

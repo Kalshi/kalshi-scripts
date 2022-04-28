@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from classes.environment import Environment
+from market_maker.classes.environment import Environment
 
 
 class Distribution(Enum):
