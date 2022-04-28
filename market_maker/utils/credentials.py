@@ -1,6 +1,7 @@
 import yaml
-from classes.credentials import Credentials
-from classes.environment import Environment
+
+from market_maker.classes.credentials import Credentials
+from market_maker.classes.environment import Environment
 
 
 def get_credentials(env: Environment) -> Credentials:

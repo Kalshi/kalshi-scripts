@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from classes.environment import Environment
+from market_maker.classes.environment import Environment
 
 
 class Distribution(Enum):
@@ -17,9 +18,11 @@ class MarketProfile:
     price_stickyness: int
     spread: int
     depth: int
+    max_spread: Optional[int]
     max_yes_price: Optional[int]
     min_yes_price: Optional[int]
-    clear_time: Optional[str]
+    snipe_timeout_seconds: Optional[int]
+    clear_time: Optional[datetime]
     distribution: Distribution
 
 

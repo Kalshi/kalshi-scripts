@@ -4,7 +4,8 @@ from datetime import timedelta
 from typing import Any, Callable, Dict, Optional
 
 import requests
-from classes.environment import Environment
+
+from market_maker.classes.environment import Environment
 
 hosts: Dict[Environment, str] = {
     Environment.DEMO: "https://demo-api.kalshi.co",

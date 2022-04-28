@@ -4,9 +4,10 @@ from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
-from classes.environment import Environment
-from classes.kalshi_client import KalshiClient
-from classes.order import Order
+
+from market_maker.classes.environment import Environment
+from market_maker.classes.kalshi_client import HttpError, KalshiClient
+from market_maker.classes.order import Order
 
 
 class MakerClient(KalshiClient):
@@ -15,24 +16,10 @@ class MakerClient(KalshiClient):
     ):
         super().__init__(env, email, password, use_advanced_api)
 
-    def get_public_markets(
-        self, dtnormalize: bool = False, active: bool = True
-    ) -> pd.DataFrame:
+    def get_public_markets(self, active: bool = True) -> pd.DataFrame:
         dictr = self.get(self.markets_url)
         recs = dictr["markets"]
         df = pd.json_normalize(recs)
-        if dtnormalize:
-            df = self._normalize_datetime(
-                df,
-                [
-                    "expiration_date",
-                    "list_date",
-                    "open_date",
-                    "close_date",
-                    "create_date",
-                ],
-            )
-            df["close_date"] = df["close_date"].dt.tz_localize(None)
 
         if active:
             df = df[df.status == "active"]
@@ -112,7 +99,11 @@ class MakerClient(KalshiClient):
         elif len(order_ids) > 0:
             order_url_base = self.get_user_url() + "/orders/"
             for order_id in order_ids:
-                self.delete(path=order_url_base + order_id, body={})
+                try:
+                    self.delete(path=order_url_base + order_id, body={})
+                except HttpError as e:
+                    if e.status != 404:
+                        raise e
                 sleep(0.3)
 
     def post_orders(self, orders: List[Order]) -> pd.DataFrame:

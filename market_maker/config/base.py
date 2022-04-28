@@ -1,6 +1,7 @@
 from typing import Dict, List
 
-from classes import profiles
+from market_maker.classes import profiles
+from market_maker.classes.profiles import Distribution, MarketProfile
 
 """
 Initial Setup
@@ -22,46 +23,42 @@ def get_strategies() -> Dict[str, profiles.StrategyProfile]:
 
     # Default profile
     default_markets: List[profiles.MarketProfile] = [
-        """
         MarketProfile(
             market_ticker="",
-
             # The amount of liquidity you'd like to provide
             # at each given moment, per side.
             instant_liquidity_cents=10000,
-
             # The maximum exposure you're willing to take from
             # your position in a market.
             max_exposure_cents=20000,
-
             # The numbers of contracts that must be purchased
             # from the bot before it increments/decrements its
             # fair value (around which the spread is centered).
             price_stickyness=40,
-
             # The amount of ticks between the yes and no liquidity
             # you provide. Only odd numbers are currently supported.
             spread=3,
-
             # The amount of ticks on which you provide
             # liquidity on each side.
             depth=5,
-
             # The price band in which you're willing to provide liquidity.
             # No orders will be placed on either side outside this band.
             max_yes_price=67,
             min_yes_price=10,
-
+            # Trades will not be placed while the spread exceeds this threshold.
+            max_spread=10,
+            # The amount of time to wait before restarting the making algorithm
+            # after liquidity is "sniped" (one side of the order book is totally
+            # cleared).
+            snipe_timeout_seconds=1200,
             # The datetime at which you'd like your resting orders to
             # automatically clear.
             clear_time=None,
-
             # The manner you'd like to distribute your liquidity across
             # the 'depth' of ticks. Supported strategies:
             # LINEAR: Resting orders of equal size are placed at each tick.
             distribution=Distribution.LINEAR,
         )
-        """
     ]
     strategies["default"] = profiles.StrategyProfile(
         profiles.Environment.DEMO, default_markets
